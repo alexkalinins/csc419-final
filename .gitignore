@@ -42,3 +42,9 @@ cmake_install.cmake
 Makefile
 
 phong
+
+glad/
+glfw/
+glfw-build/
+glad-build/
+eigen-build/
