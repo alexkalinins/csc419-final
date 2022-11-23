@@ -43,8 +43,9 @@ Makefile
 
 phong
 
-glad/
-glfw/
-glfw-build/
-glad-build/
-eigen-build/
+glad/**
+glfw/**
+glfw-build/**
+glad-build/**
+eigen-build/**
+libigl/**
