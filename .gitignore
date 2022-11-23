@@ -34,3 +34,11 @@
 build/*
 *.DS_Store
 solution/*.cpp
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+phong
