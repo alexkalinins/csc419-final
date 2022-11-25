@@ -1,10 +1,11 @@
 #include "phong_deformation.h"
 
 void phong_deformation(
-    const Eigen::Vector3d &V,
-    const Eigen::RowVectorXi &e,
-    const Eigen::MatrixXd &X,
-    Eigen::Vector3d &x)
+    const Eigen::MatrixXd &X, // undeformed complex mesh geometry
+    const Eigen::MatrixXd &V, // deformed tetrahedral mesh geometry
+    const Eigen::MatrixXi &F, // deformed tetrahedral mesh topology
+    Eigen::MatrixXd &x        // deformed X mesh geometry
+)
 {
-  x = V;
+  x = X;
 }
