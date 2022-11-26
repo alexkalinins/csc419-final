@@ -3,25 +3,20 @@
 
 #include <Eigen/Core>
 
-/**
- * Phong deformation is used to cheaply compute deformations on complex meshes. Physics simulations
- * and other deformations can be performed on a simpler tetrahedral mesh. Given such simpler deformed
- * mesh and the complex undeformed object (in material space; not necessarily tetrahedral), this
- * function applies the deformation from the simpler mesh to the complex mesh.
- *
- * This allows physics simulations to be less expensive, as they are performed on a simpler
- * tetrahedral mesh.
- *
- * @param X Undeformed complex mesh geometry (in material space)
- * @param V Deformed tetrahedral mesh geometry (in material space)
- * @param F Tetrahedral mesh faces (indeces into V)
- * @param x OUTPUT: Deformed complex mesh geometry (in material space)
- */
-void phong_deformation(
-    const Eigen::MatrixXd &X, // undeformed complex mesh geometry
-    const Eigen::MatrixXd &V, // deformed tetrahedral mesh geometry
-    const Eigen::MatrixXi &F, // deformed tetrahedral mesh topology
-    Eigen::MatrixXd &x  // deformed X mesh geometry
-);
 
+// Consider a tetrahedron with undeformed (material space) vertex positions, given an arbitrary interior point,
+// we compute its displaced position using Phong Deformation Model.
+//
+// Inputs:
+//   V  #V by 3 list of undeformed vertex positions (material space) Each row is a single undefored vertex position
+//   e   1 by 4 vertex indices for this tetrahedron
+//   X   3 by 1 undeformed query point position inside this tetrahedron
+// Outputs:
+//   x   3 by 1 deformed query point position
+void phong_deformation(
+  const Eigen::Vector3d & V, 
+  const Eigen::RowVectorXi & e,
+  const Eigen::MatrixXd & X,
+  Eigen::Vector3d & x);
+  
 #endif
