@@ -1,3 +1,4 @@
+#include "cell_def_gradient.h"
 #include <Eigen/Core>
 #include <vector>
 
