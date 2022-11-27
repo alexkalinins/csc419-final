@@ -75,6 +75,7 @@ void vertex_def_gradient(
     Eigen::Matrix3d F_i;
     F_i.setZero();
 
+    // sum over each adjacent cell
     for (int k = 0; k < k_count; k++)
     {
       F_i += w_prime[k] * F_cell[face_adj[i][k]];
