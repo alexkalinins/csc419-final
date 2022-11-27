@@ -4,23 +4,18 @@
 #include <vector>
 #include <igl/barycentric_coordinates.h>
 
-Eigen::Matrix3d edge_basis(const Eigen::MatrixXd &V, const Eigen::RowVector3d e)
-{
-  return V.row(e(1)) - V.row(e(0)), V.row(e(2)) - V.row(e(0)), V.row(e(3)) - V.row(e(0)); // todo T?
-}
-
-void phong_deformation_point(
-    const Eigen::MatrixXd &V_full,
-    const Eigen::MatrixXd &tet_def,
-    const Eigen::MatrixXd &tet_undef,
-    const Eigen::MatrixXi &tet_F,
+void phong_deformation_mesh(
+    const Eigen::MatrixX3d &V_full,
+    const Eigen::MatrixX3d &tet_def,
+    const Eigen::MatrixX3d &tet_undef,
+    const Eigen::MatrixX4i &tet_F,
     const Eigen::VectorXi &E,
-    Eigen::Vector3d &V_def)
+    Eigen::MatrixX3d &V_def)
 {
 
-  V_def.resize(V_full.size());
+  V_def.resize(V_full.rows(), 3);
 
-  Eigen::MatrixXd c_def(tet_F.rows(), 3), c_undef(tet_F.rows(), 3);
+  Eigen::MatrixX3d c_def(tet_F.rows(), 3), c_undef(tet_F.rows(), 3);
 
   // compute deformed and undeformed tet-mesh centroids
   for (int i = 0; i < tet_F.rows(); i++)
@@ -37,13 +32,15 @@ void phong_deformation_point(
   std::vector<Eigen::Matrix3d> F_vert;
   vertex_def_gradient(tet_undef, tet_F, c_def, F_cell, F_vert);
 
-  Eigen::MatrixXd B(V_full.rows(), 4); // barycentric coordinates
+  Eigen::MatrixX4d B(V_full.rows(), 4); // barycentric coordinates
 
   // compute barycentric coordinates
   for (int i = 0; i < V_full.rows(); i++)
   {
-    Eigen::Vector4d bary;
-    igl::barycentric_coordinates(V_full.row(i), tet_undef.row(E(i, 0)), tet_undef.row(E(i, 1)), tet_undef.row(E(i, 2)), tet_undef.row(E(i, 3)), bary);
+    Eigen::RowVector4d bary;
+    int face = E(i);
+
+    igl::barycentric_coordinates(V_full.row(i), tet_undef.row(tet_F(face, 0)), tet_undef.row(tet_F(face, 1)), tet_undef.row(tet_F(face, 2)), tet_undef.row(tet_F(face, 3)), bary);
     B.row(i) = bary;
   }
 
@@ -52,15 +49,26 @@ void phong_deformation_point(
   // compute deformed vertices
   for (int i = 0; i < V_full.rows(); i++)
   {
+    int face = E(i);
+
+    Eigen::Vector3d diff_cent = V_full.row(i) - c_undef.row(face);
+
     // cell deformation
-    f_c = c_def.row(E(i)) + F_cell[E(i)] * (V_full.row(i) - c_undef.row(E(i)));
+    f_c = (F_cell[face] * diff_cent) +c_def.row(E(i)).transpose();
 
     // vertex deformation
     f_v.setZero();
 
+    // tet face this vertex belongs to
+
+    Eigen::Vector3d diff_vert;
+
     for (int j = 0; j < 4; j++)
     {
-      f_v += B(i, j) * F_vert[E(i, j)] * (V_full.row(i) - tet_undef.row(E(i, j)));
+      int v = tet_F(face, j); // todo: check if this is correct
+      diff_vert = V_full.row(i) - tet_undef.row(v);
+
+      f_v += B(i, j) * (F_vert[v] * diff_vert + tet_def.row(v).transpose());
     }
 
     // phong deformation

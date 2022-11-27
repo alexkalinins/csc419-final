@@ -14,11 +14,11 @@
  * @param V_def OUTPUT: #V by 3 matrix of deformed (full) mesh geometry
  */
 void phong_deformation_point(
-    const Eigen::MatrixXd &V_full,
-    const Eigen::MatrixXd &tet_def,
-    const Eigen::MatrixXd &tet_undef,
-    const Eigen::MatrixXi &tet_F,
+    const Eigen::MatrixX3d &V_full,
+    const Eigen::MatrixX3d &tet_def,
+    const Eigen::MatrixX3d &tet_undef,
+    const Eigen::MatrixX4i &tet_F,
     const Eigen::VectorXi &E,
-    Eigen::Vector3d &V_def);
+    Eigen::MatrixX3d &V_def);
 
 #endif

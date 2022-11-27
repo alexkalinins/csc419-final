@@ -15,9 +15,9 @@
  * one for each vector in V
  */
 void vertex_def_gradient(
-    const Eigen::MatrixXd &V_undef,
-    const Eigen::MatrixXi &F,
-    const Eigen::MatrixXd &C,
+    const Eigen::MatrixX3d &V_undef,
+    const Eigen::MatrixX4i &F,
+    const Eigen::MatrixX3d &C,
     const std::vector<Eigen::Matrix3d> &F_cell,
     std::vector<Eigen::Matrix3d> &grad);
 

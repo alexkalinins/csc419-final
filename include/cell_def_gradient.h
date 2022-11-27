@@ -13,9 +13,9 @@
  * @param grad OUTPUT: #F long list of 3 by 3 cell deformation gradients; one for each face in F
  */
 void cell_def_gradient(
-    const Eigen::MatrixXd &V_undef,
-    const Eigen::MatrixXd &V_def,
-    const Eigen::MatrixXi &F,
+    const Eigen::MatrixX3d &V_undef,
+    const Eigen::MatrixX3d &V_def,
+    const Eigen::MatrixX4i &F,
     std::vector<Eigen::Matrix3d> &grad);
 
 #endif
