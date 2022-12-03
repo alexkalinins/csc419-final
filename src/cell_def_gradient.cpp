@@ -1,6 +1,8 @@
 #include "cell_def_gradient.h"
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <vector>
+#include <iostream>
 
 void edge_basis(const Eigen::MatrixX3d &V, const Eigen::Vector4i &e, Eigen::Matrix3d &basis)
 {
@@ -13,6 +15,8 @@ void cell_def_gradient(
     const Eigen::MatrixX4i &F,
     std::vector<Eigen::Matrix3d> &grad)
 {
+  std::cout<< "Computing cell deformation gradients" << std::endl;
+
   grad.resize(F.rows());
   
   // tet face:
@@ -30,4 +34,6 @@ void cell_def_gradient(
     Eigen::Matrix3d F = mat_def * mat_undef.inverse();
     grad.push_back(F);
   }
+
+  std::cout<< "Finished computing cell gradients" << std::endl;
 }

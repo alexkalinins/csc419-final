@@ -1,88 +1,117 @@
-
+#include <igl/min_quad_with_fixed.h>
 #include <igl/read_triangle_mesh.h>
-#include <igl/per_vertex_normals.h>
+#include <igl/readOBJ.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <Eigen/Core>
-#include <string>
 #include <iostream>
+#include "find_tet.h"
+#include "phong_deformation_mesh.h"
 
 int main(int argc, char *argv[])
 {
-  // todo
+  // args order: full.obj; tet.obj; tet-def.obj
 
+  enum View
+  {
+    FULL,
+    TET,
+    TET_DEF,
+    FULL_DEF,
+  } view = FULL;
 
-  // Load input meshes
-  Eigen::MatrixXd V,U_lscm,U_tutte,U;
-  Eigen::MatrixXi F;
-  igl::read_triangle_mesh(
-    (argc>1?argv[1]:"../data/beetle.obj"),V,F);
+  Eigen::MatrixXi ftc, fn; // unused
+  Eigen::MatrixXd tc, n;
+
+  // read full (triangle) mesh
+  Eigen::MatrixXd V_full;
+  Eigen::MatrixXi F_full;
+  igl::read_triangle_mesh(argv[1], V_full, F_full);
+  // igl::readOBJ(argv[1], V_full, tc, n, F_full, ftc, fn);
+
+  std::cout << "V_full size " << V_full.rows() << " " << V_full.cols() << std::endl;
+  std::cout << "F_full size " << F_full.rows() << " " << F_full.cols() << std::endl;
+
+  // read undeformed tet mesh
+  Eigen::MatrixXd V_tet;
+  Eigen::MatrixXi F_tet;
+  igl::readOBJ(argv[2], V_tet, tc, n, F_tet, ftc, fn);
+
+  std::cout << "V_tet size " << V_tet.rows() << " " << V_tet.cols() << std::endl;
+  std::cout << "F_tet size " << F_tet.rows() << " " << F_tet.cols() << std::endl;
+
+  // read deformed tet mesh
+  Eigen::MatrixXd V_tet_def;
+  Eigen::MatrixXi F_tet_def;
+  igl::readOBJ(argv[3], V_tet_def, tc, n, F_tet_def, ftc, fn);
+
   igl::opengl::glfw::Viewer viewer;
-  std::cout<<R"(
-[space]  Toggle whether displaying 3D surface or 2D parameterization
-C,c      Toggle checkerboard
-t        Switch parameterization to Tutte embedding
-l        Switch parameterization to Least squares conformal mapping
+  std::cout << R"(
+f        Show full mesh
+u        Show undeformed tet mesh
+d        Show deformed tet mesh
+[space]  Apply deformation to full mesh
 )";
-  // Fit parameterization in unit sphere
-  const auto normalize = [](Eigen::MatrixXd &U)
-  {
-    U.rowwise() -= U.colwise().mean().eval();
-    U.array() /= 
-      (U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff()/2.0;
-  };
-  normalize(V);
-  normalize(U_tutte);
-  normalize(U_lscm);
 
-  bool plot_parameterization = false;
-  const auto & update = [&]()
+  auto phong_deform = [&]()
   {
-    if(plot_parameterization)
-    {
-      // Viewer wants 3D coordinates, so pad UVs with column of zeros
-      viewer.data().set_vertices(
-        (Eigen::MatrixXd(V.rows(),3)<<
-         U.col(0),Eigen::VectorXd::Zero(V.rows()),U.col(1)).finished());
-    }else
-    {
-      viewer.data().set_vertices(V);
-    }
+    Eigen::VectorXi E;
+    Eigen::MatrixX3d V_full_def;
+
+    V_full.resize(V_full.rows(), 3); // todo fix suzanne mesh
+    V_tet.resize(V_tet.rows(), 3);
+    F_tet.resize(F_tet.rows(), 4);
+
+    std::cout << "Computing tetrahedral belonging for each point" << std::endl;
+
+    // find tetrahedron for each point in V_full
+    find_tet(V_full, V_tet, F_tet, E);
+
+    std::cout << "Found all tetrahedra" << std::endl;
+
+
+    // deform V_full
+    phong_deformation_mesh(V_full, V_tet, V_tet_def, F_tet, E, V_full_def);
+
+    viewer.data().clear();
+    viewer.data().set_mesh(V_full_def, F_full);
     viewer.data().compute_normals();
-    viewer.data().set_uv(U*10);
+    std::cout << "Done" << std::endl;
   };
-  viewer.callback_key_pressed = 
-    [&](igl::opengl::glfw::Viewer &, unsigned int key, int)
+
+  viewer.callback_key_pressed =
+      [&](igl::opengl::glfw::Viewer &, unsigned int key, int mod)
   {
-    switch(key)
+    switch (key)
     {
-      case ' ':
-        plot_parameterization ^= 1;
-        break;
-      case 'l':
-        U = U_lscm;
-        break;
-      case 't':
-        U = U_tutte;
-        break;
-      case 'C':
-      case 'c':
-        viewer.data().show_texture ^= 1;
-        break;
-      default:
-        return false;
+    case 'f':
+      viewer.data().clear();
+      viewer.data().set_mesh(V_full, F_full);
+      break;
+    case 'u':
+      viewer.data().clear();
+      viewer.data().set_mesh(V_tet, F_tet);
+      break;
+    case 'd':
+      viewer.data().clear();
+      viewer.data().set_mesh(V_tet_def, F_tet_def);
+      break;
+    case ' ':
+      viewer.data().clear();
+
+      phong_deform();
+      break;
+    default:
+      return false;
     }
-    update();
+
     return true;
   };
 
-  U = U_tutte;
-  viewer.data().set_mesh(V,F);
-  Eigen::MatrixXd N;
-  igl::per_vertex_normals(V,F,N);
-  viewer.data().set_colors(N.array()*0.5+0.5);
-  update();
-  viewer.data().show_texture = true;
-  viewer.data().show_lines = false;
+  viewer.data().set_mesh(V_full, F_full);
+  viewer.data().show_lines = true;
+  viewer.core().is_animating = false;
+  viewer.data().face_based = true;
+
   viewer.launch();
 
   return EXIT_SUCCESS;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.2)
 project(phong)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -20,5 +20,5 @@ endif()
 add_library(core ${SRCFILES})
 target_link_libraries(core igl::core igl::opengl igl::opengl_glfw )
 
-add_executable(parametrization "main.cpp")
-target_link_libraries(parametrization core igl::core igl::opengl igl::opengl_glfw)
+add_executable(phong "main.cpp")
+target_link_libraries(phong core igl::core igl::opengl igl::opengl_glfw)

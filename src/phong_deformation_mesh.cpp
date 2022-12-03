@@ -72,6 +72,8 @@ void phong_deformation_mesh(
     }
 
     // phong deformation
-    V_def.row(i) = (f_c + f_v) / 2;
+    // V_def.row(i) = (f_c + f_v) / 2;
+
+    V_def.row(i) = f_c; // todo linear interpol only !!
   }
 }

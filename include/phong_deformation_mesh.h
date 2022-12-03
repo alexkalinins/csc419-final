@@ -13,7 +13,7 @@
  * @param E #V by 1 vector mapping vertices in V to a face in the tet mesh.
  * @param V_def OUTPUT: #V by 3 matrix of deformed (full) mesh geometry
  */
-void phong_deformation_point(
+void phong_deformation_mesh(
     const Eigen::MatrixX3d &V_full,
     const Eigen::MatrixX3d &tet_def,
     const Eigen::MatrixX3d &tet_undef,
