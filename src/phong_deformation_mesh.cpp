@@ -3,6 +3,7 @@
 #include "cell_def_gradient.h"
 #include <vector>
 #include <igl/barycentric_coordinates.h>
+#include <Eigen/Dense>
 
 void phong_deformation_mesh(
     const Eigen::MatrixX3d &V_full,
@@ -14,8 +15,12 @@ void phong_deformation_mesh(
 {
 
   V_def.resize(V_full.rows(), 3);
+  V_def.setZero();
 
   Eigen::MatrixX3d c_def(tet_F.rows(), 3), c_undef(tet_F.rows(), 3);
+
+  c_def.setZero();
+  c_undef.setZero();
 
   // compute deformed and undeformed tet-mesh centroids
   for (int i = 0; i < tet_F.rows(); i++)
@@ -30,9 +35,10 @@ void phong_deformation_mesh(
 
   // compute vertex gradients for each vertex in tet mesh
   std::vector<Eigen::Matrix3d> F_vert;
-  vertex_def_gradient(tet_undef, tet_F, c_def, F_cell, F_vert);
+  vertex_def_gradient(tet_def, tet_F, c_undef, F_cell, F_vert);
 
   Eigen::MatrixX4d B(V_full.rows(), 4); // barycentric coordinates
+  B.setZero();
 
   // compute barycentric coordinates
   for (int i = 0; i < V_full.rows(); i++)
@@ -49,31 +55,29 @@ void phong_deformation_mesh(
   // compute deformed vertices
   for (int i = 0; i < V_full.rows(); i++)
   {
-    int face = E(i);
+    
+    f_v.setZero();
+    f_c.setZero();
 
-    Eigen::Vector3d diff_cent = V_full.row(i) - c_undef.row(face);
+    int tet = E(i);
+
+    Eigen::Vector3d diff_cent = V_full.row(i) - c_undef.row(tet);
 
     // cell deformation
-    f_c = (F_cell[face] * diff_cent) +c_def.row(E(i)).transpose();
-
+    f_c = (F_cell[tet] * diff_cent) + c_def.row(E(i)).transpose();
+    
     // vertex deformation
-    f_v.setZero();
-
-    // tet face this vertex belongs to
-
     Eigen::Vector3d diff_vert;
 
     for (int j = 0; j < 4; j++)
     {
-      int v = tet_F(face, j); // todo: check if this is correct
+      int v = tet_F(tet, j);
       diff_vert = V_full.row(i) - tet_undef.row(v);
 
       f_v += B(i, j) * (F_vert[v] * diff_vert + tet_def.row(v).transpose());
     }
 
     // phong deformation
-    // V_def.row(i) = (f_c + f_v) / 2;
-
-    V_def.row(i) = f_c; // todo linear interpol only !!
+    V_def.row(i) = (f_c + f_v) / 2;
   }
 }

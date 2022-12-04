@@ -53,6 +53,6 @@ void find_tet(
       E(i) = t;
     }
   }
-
-  assert(bad_points == 0 && "Mesh contains vertices outside tetrahedra");
+  
+  // assert(bad_points == 0 && "Mesh contains vertices outside tetrahedra");
 }

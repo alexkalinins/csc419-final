@@ -6,6 +6,36 @@
 #include <iostream>
 #include "find_tet.h"
 #include "phong_deformation_mesh.h"
+#include <cmath>
+
+/**
+ * Rotate around z index based on vertex z-position.
+ * @param V
+ */
+Eigen::MatrixX3d deform_mesh(const Eigen::MatrixX3d V)
+{
+  Eigen::MatrixX3d V_def(V.rows(), 3);
+
+  double rot;
+
+  for (int i = 0; i < V.rows(); i++)
+  {
+    rot = V(i, 1);
+    
+
+    Eigen::Matrix3d r_mat;
+
+    r_mat << cos(rot), 0, sin(rot),
+        0, 1, 0,
+        -sin(rot), 0, cos(rot);
+
+    Eigen::Vector3d result = r_mat * V.row(i).transpose();
+
+    V_def.row(i) = result;
+  }
+
+  return V_def;
+}
 
 int main(int argc, char *argv[])
 {
@@ -39,16 +69,25 @@ int main(int argc, char *argv[])
   std::cout << "V_tet size " << V_tet.rows() << " " << V_tet.cols() << std::endl;
   std::cout << "F_tet size " << F_tet.rows() << " " << F_tet.cols() << std::endl;
 
+  V_full.resize(V_full.rows(), 3); // todo fix suzanne mesh
+  V_tet.resize(V_tet.rows(), 3);
+  F_tet.resize(F_tet.rows(), 4);
+
   // read deformed tet mesh
   Eigen::MatrixXd V_tet_def;
-  Eigen::MatrixXi F_tet_def;
-  igl::readOBJ(argv[3], V_tet_def, tc, n, F_tet_def, ftc, fn);
+  // Eigen::MatrixXi F_tet_def;
+  // igl::readOBJ(argv[3], V_tet_def, tc, n, F_tet_def, ftc, fn);
+  V_tet_def.resize(V_tet.rows(), 3);
+  V_tet_def = deform_mesh(V_tet);
+
+  std::cout << "random row def " << V_tet_def.row(24) << std::endl;
+  std::cout << "random row undef" << V_tet.row(24) << std::endl;
 
   igl::opengl::glfw::Viewer viewer;
   std::cout << R"(
 f        Show full mesh
 u        Show undeformed tet mesh
-d        Show deformed tet mesh
+m        Show deformed tet mesh
 [space]  Apply deformation to full mesh
 )";
 
@@ -57,7 +96,7 @@ d        Show deformed tet mesh
     Eigen::VectorXi E;
     Eigen::MatrixX3d V_full_def;
 
-    V_full.resize(V_full.rows(), 3); // todo fix suzanne mesh
+    V_full.resize(V_full.rows(), 3);
     V_tet.resize(V_tet.rows(), 3);
     F_tet.resize(F_tet.rows(), 4);
 
@@ -68,9 +107,8 @@ d        Show deformed tet mesh
 
     std::cout << "Found all tetrahedra" << std::endl;
 
-
     // deform V_full
-    phong_deformation_mesh(V_full, V_tet, V_tet_def, F_tet, E, V_full_def);
+    phong_deformation_mesh(V_full, V_tet_def, V_tet, F_tet, E, V_full_def);
 
     viewer.data().clear();
     viewer.data().set_mesh(V_full_def, F_full);
@@ -90,10 +128,12 @@ d        Show deformed tet mesh
     case 'u':
       viewer.data().clear();
       viewer.data().set_mesh(V_tet, F_tet);
+      viewer.data().compute_normals();
       break;
-    case 'd':
+    case 'm':
       viewer.data().clear();
-      viewer.data().set_mesh(V_tet_def, F_tet_def);
+      viewer.data().set_mesh(V_tet_def, F_tet);
+      viewer.data().compute_normals();
       break;
     case ' ':
       viewer.data().clear();

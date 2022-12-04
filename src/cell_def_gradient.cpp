@@ -4,9 +4,13 @@
 #include <vector>
 #include <iostream>
 
-void edge_basis(const Eigen::MatrixX3d &V, const Eigen::Vector4i &e, Eigen::Matrix3d &basis)
+Eigen::Matrix3d edge_basis(const Eigen::MatrixX3d &V, const Eigen::Vector4i &e)
 {
-  basis << V.row(e(1)) - V.row(e(0)), V.row(e(2)) - V.row(e(0)), V.row(e(3)) - V.row(e(0)); // todo T?
+  Eigen::Matrix3d basis;
+  basis.col(0) = (V.row(e(1)) - V.row(e(0))).transpose();
+  basis.col(1) = (V.row(e(2)) - V.row(e(0))).transpose();
+  basis.col(2) = (V.row(e(3)) - V.row(e(0))).transpose();
+  return basis;
 }
 
 void cell_def_gradient(
@@ -15,10 +19,8 @@ void cell_def_gradient(
     const Eigen::MatrixX4i &F,
     std::vector<Eigen::Matrix3d> &grad)
 {
-  std::cout<< "Computing cell deformation gradients" << std::endl;
-
   grad.resize(F.rows());
-  
+
   // tet face:
   Eigen::Vector4i e;
 
@@ -28,12 +30,11 @@ void cell_def_gradient(
   for (int i = 0; i < F.rows(); i++)
   {
     e = F.row(i);
-    edge_basis(V_undef, e, mat_undef);
-    edge_basis(V_def, e, mat_def);
+
+    mat_undef = edge_basis(V_undef, e);
+    mat_def = edge_basis(V_def, e);
 
     Eigen::Matrix3d F = mat_def * mat_undef.inverse();
-    grad.push_back(F);
+    grad[i] = F;
   }
-
-  std::cout<< "Finished computing cell gradients" << std::endl;
 }
