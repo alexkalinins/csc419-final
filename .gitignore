@@ -2,7 +2,7 @@
 *.slo
 *.lo
 *.o
-*.obj
+
 
 # Precompiled Headers
 *.gch
@@ -49,3 +49,5 @@ glfw-build/**
 glad-build/**
 eigen-build/**
 libigl/**
+
+*.mp4

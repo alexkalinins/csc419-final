@@ -20,8 +20,7 @@ Eigen::MatrixX3d deform_mesh(const Eigen::MatrixX3d V)
 
   for (int i = 0; i < V.rows(); i++)
   {
-    rot = V(i, 1);
-    
+    rot = V(i, 1) * 0.2;
 
     Eigen::Matrix3d r_mat;
 
@@ -56,65 +55,69 @@ int main(int argc, char *argv[])
   Eigen::MatrixXd V_full;
   Eigen::MatrixXi F_full;
   igl::read_triangle_mesh(argv[1], V_full, F_full);
-  // igl::readOBJ(argv[1], V_full, tc, n, F_full, ftc, fn);
-
-  std::cout << "V_full size " << V_full.rows() << " " << V_full.cols() << std::endl;
-  std::cout << "F_full size " << F_full.rows() << " " << F_full.cols() << std::endl;
 
   // read undeformed tet mesh
-  Eigen::MatrixXd V_tet;
+  Eigen::MatrixXd V_tet_undef;
   Eigen::MatrixXi F_tet;
-  igl::readOBJ(argv[2], V_tet, tc, n, F_tet, ftc, fn);
+  igl::readOBJ(argv[2], V_tet_undef, tc, n, F_tet, ftc, fn);
 
-  std::cout << "V_tet size " << V_tet.rows() << " " << V_tet.cols() << std::endl;
-  std::cout << "F_tet size " << F_tet.rows() << " " << F_tet.cols() << std::endl;
-
-  V_full.resize(V_full.rows(), 3); // todo fix suzanne mesh
-  V_tet.resize(V_tet.rows(), 3);
+  V_full.resize(V_full.rows(), 3);
+  V_tet_undef.resize(V_tet_undef.rows(), 3);
   F_tet.resize(F_tet.rows(), 4);
 
   // read deformed tet mesh
   Eigen::MatrixXd V_tet_def;
-  // Eigen::MatrixXi F_tet_def;
-  // igl::readOBJ(argv[3], V_tet_def, tc, n, F_tet_def, ftc, fn);
-  V_tet_def.resize(V_tet.rows(), 3);
-  V_tet_def = deform_mesh(V_tet);
+  V_tet_def.resize(V_tet_undef.rows(), 3);
+  // V_tet_def = deform_mesh(V_tet_undef);
+  V_tet_def = V_tet_undef;
 
-  std::cout << "random row def " << V_tet_def.row(24) << std::endl;
-  std::cout << "random row undef" << V_tet.row(24) << std::endl;
+  Eigen::VectorXi E;
+  // find tetrahedron for each point in V_full
+
+  std::cout << std::endl;
+  std::cout << "Precomputing phong deformation" << std::endl;
+  find_tet(V_full, V_tet_undef, F_tet, E);
+  std::cout << "Done" << std::endl;
+
+  V_full.resize(V_full.rows(), 3);
+  V_tet_undef.resize(V_tet_undef.rows(), 3);
+  F_tet.resize(F_tet.rows(), 4);
 
   igl::opengl::glfw::Viewer viewer;
   std::cout << R"(
-f        Show full mesh
-u        Show undeformed tet mesh
-m        Show deformed tet mesh
-[space]  Apply deformation to full mesh
+f        Show full mesh (original)
+m        Show tet mesh (after deform)
+x        Apply deformation to tet mesh
+r        Reset deformations
+[space]  Show deformed full mesh (via phong deformation)
 )";
 
   auto phong_deform = [&]()
   {
-    Eigen::VectorXi E;
     Eigen::MatrixX3d V_full_def;
 
-    V_full.resize(V_full.rows(), 3);
-    V_tet.resize(V_tet.rows(), 3);
-    F_tet.resize(F_tet.rows(), 4);
-
-    std::cout << "Computing tetrahedral belonging for each point" << std::endl;
-
-    // find tetrahedron for each point in V_full
-    find_tet(V_full, V_tet, F_tet, E);
-
-    std::cout << "Found all tetrahedra" << std::endl;
-
     // deform V_full
-    phong_deformation_mesh(V_full, V_tet_def, V_tet, F_tet, E, V_full_def);
+    phong_deformation_mesh(V_full, V_tet_def, V_tet_undef, F_tet, E, V_full_def);
 
     viewer.data().clear();
     viewer.data().set_mesh(V_full_def, F_full);
     viewer.data().compute_normals();
-    std::cout << "Done" << std::endl;
   };
+
+  auto update = [&](){
+switch (view)
+    {
+    case TET_DEF:
+      viewer.data().set_vertices(V_tet_def);
+      viewer.data().compute_normals();
+      break;
+    case FULL_DEF:
+      phong_deform();
+      break;
+    default:
+      break;
+    };
+  };  
 
   viewer.callback_key_pressed =
       [&](igl::opengl::glfw::Viewer &, unsigned int key, int mod)
@@ -122,24 +125,33 @@ m        Show deformed tet mesh
     switch (key)
     {
     case 'f':
+      view = FULL;
       viewer.data().clear();
       viewer.data().set_mesh(V_full, F_full);
       break;
-    case 'u':
-      viewer.data().clear();
-      viewer.data().set_mesh(V_tet, F_tet);
-      viewer.data().compute_normals();
-      break;
     case 'm':
+      view = TET_DEF;
       viewer.data().clear();
       viewer.data().set_mesh(V_tet_def, F_tet);
       viewer.data().compute_normals();
       break;
     case ' ':
+      view = FULL_DEF;
       viewer.data().clear();
 
       phong_deform();
       break;
+
+    case 'x':
+      V_tet_def = deform_mesh(V_tet_def);
+      update();
+      break;
+
+    case 'r':
+      V_tet_def = V_tet_undef;
+      update();
+      break;
+
     default:
       return false;
     }
