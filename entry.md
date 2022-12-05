@@ -4,7 +4,8 @@ Computing physics-based deformations on large objects can be very computationall
 
 The deformation is performed by approximating the (unknown deformation function) using a cell-centroid deformation gradient and a cell-to-vertex gradient, then blending the results together. The cell-centroid deformation gradient is computed at the centroid of the tetrahedral cell that contains the query point, then that half of the phong deformation is computed using a linear interpolation based on the barycentric coordinates of the query point. The cell-to-vertex gradient is computed as a weigted sum of adjacent cell gradients, with the weights calculated based on the lengths of the vectors from the query point to the adjacent centroids. 
 
-[![Demo video](https://www.youtube.com/watch?v=VF_AjMdFFHk)
+[![Watch the video](https://img.youtube.com/vi/VF_AjMdFFHk/maxresdefault.jpg)](https://youtu.be/VF_AjMdFFHk)
+
 
 ## Method
 
